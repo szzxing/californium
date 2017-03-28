@@ -19,6 +19,7 @@
  ******************************************************************************/
 package org.eclipse.californium.core.coap;
 
+import org.eclipse.californium.core.identifier.EndpointIdentifier;
 
 /**
  * A callback that gets invoked on a message's lifecycle events.
@@ -86,4 +87,6 @@ public interface MessageObserver {
 	 * observed might cancel a response to send another one instead.
 	 */
 	void onCancel();
+
+	void onDestinationEndpointDefined(EndpointIdentifier destination);
 }

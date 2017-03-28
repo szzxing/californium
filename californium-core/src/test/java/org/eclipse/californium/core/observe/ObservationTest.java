@@ -16,20 +16,18 @@
  ******************************************************************************/
 package org.eclipse.californium.core.observe;
 
-import static org.hamcrest.core.Is.*;
+import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsNot.not;
-import static org.hamcrest.core.IsSame.theInstance;
-import static org.hamcrest.core.IsSame.sameInstance;
+import static org.hamcrest.core.IsSame.*;
 import static org.junit.Assert.assertThat;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.californium.category.Small;
-import org.eclipse.californium.core.coap.MessageObserver;
+import org.eclipse.californium.core.coap.MessageObserverAdapter;
 import org.eclipse.californium.core.coap.Request;
-import org.eclipse.californium.core.coap.Response;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -69,31 +67,7 @@ public class ObservationTest {
 		request.setObserve();
 		request.setToken(new byte[] { 1, 2, 3 });
 		request.setUserContext(userContext);
-		request.addMessageObserver(new MessageObserver() {
-			
-			@Override
-			public void onTimeout() {
-			}
-			
-			@Override
-			public void onRetransmission() {
-			}
-			
-			@Override
-			public void onResponse(Response response) {
-			}
-			
-			@Override
-			public void onReject() {
-			}
-			
-			@Override
-			public void onCancel() {
-			}
-			
-			@Override
-			public void onAcknowledgement() {
-			}
+		request.addMessageObserver(new MessageObserverAdapter() {
 		});
 		Observation observation = new Observation(request, null);
 		request.cancel();

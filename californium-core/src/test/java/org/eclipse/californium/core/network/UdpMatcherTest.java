@@ -17,8 +17,7 @@
  ******************************************************************************/
 package org.eclipse.californium.core.network;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.assertThat;
 
 import java.net.InetAddress;
@@ -240,7 +239,7 @@ public class UdpMatcherTest {
 		Exchange exchange = sendRequest(matcher, null);
 		
 		// WHEN observe gets canceled
-		matcher.cancelObserve(exchange.getRequest().getToken());
+		matcher.cancelObserve(exchange.getRequest().getDestinationEndpoint(), exchange.getRequest().getToken());
 
 		// THEN assert that token got released
 		KeyToken keyToken = KeyToken.fromOutboundMessage(exchange.getCurrentRequest());

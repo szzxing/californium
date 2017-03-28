@@ -35,6 +35,7 @@ import java.util.logging.Logger;
 
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP.Type;
+import org.eclipse.californium.core.identifier.EndpointIdentifier;
 import org.eclipse.californium.core.observe.ObserveManager;
 
 /**
@@ -135,6 +136,9 @@ public abstract class Message {
 	 * has happened yet. The {@link Matcher} sets the timestamp.
 	 */
 	private long timestamp;
+
+	private EndpointIdentifier sourceEndpoint;
+	private EndpointIdentifier destinationEndpoint;
 
 	/**
 	 * Creates a new message with no specified message type.
@@ -647,6 +651,45 @@ a	 */
 	 */
 	public void setTimestamp(long timestamp) {
 		this.timestamp = timestamp;
+	}
+
+	/**
+	 * Gets the identifier of the endpoint this message originates from.
+	 * 
+	 * @return The source endpoint.
+	 */
+	public final EndpointIdentifier getSourceEndpoint() {
+		return sourceEndpoint;
+	}
+
+	/**
+	 * Sets the identifier of the endpoint this message originates from.
+	 * 
+	 * @param source The source endpoint.
+	 */
+	public final void setSourceEndpoint(EndpointIdentifier source) {
+		this.sourceEndpoint = source;
+	}
+
+	/**
+	 * Gets the identifier of the endpoint this message is destined to.
+	 * 
+	 * @return The destination endpoint.
+	 */
+	public final EndpointIdentifier getDestinationEndpoint() {
+		return destinationEndpoint;
+	}
+
+	/**
+	 * Sets the identifier of the endpoint this message is destined to.
+	 * 
+	 * @param destination The destination endpoint.
+	 */
+	public final void setDestinationEndpoint(EndpointIdentifier destination) {
+		this.destinationEndpoint = destination;
+		for (MessageObserver observer : getMessageObservers()) {
+			observer.onDestinationEndpointDefined(destination);
+		}
 	}
 
 	/**

@@ -321,6 +321,7 @@ public class UDPConnector implements Connector {
 								datagram.getPort() });
 			}
 			socket.send(datagram);
+			raw.onContextEstablished(null);
 		}
 	}
 

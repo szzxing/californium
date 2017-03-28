@@ -19,6 +19,7 @@
  ******************************************************************************/
 package org.eclipse.californium.core.coap;
 
+import org.eclipse.californium.core.identifier.EndpointIdentifier;
 
 /**
  * An abstract adapter class for reacting to a message's lifecylce events.
@@ -61,5 +62,11 @@ public abstract class MessageObserverAdapter implements MessageObserver {
 	@Override
 	public void onTimeout() {
 		// empty default implementation
+	}
+
+	@Override
+	public void onDestinationEndpointDefined(EndpointIdentifier destination) {
+		// TODO Auto-generated method stub
+
 	}
 }
