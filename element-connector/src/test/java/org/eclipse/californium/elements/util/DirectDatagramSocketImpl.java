@@ -12,6 +12,10 @@
  * 
  * Contributors:
  *    Bosch Software Innovations GmbH - initial implementation.
+ *    Achim Kraus (Bosch Software Innovations GmbH) - remove log level property and
+ *                                                    redirect this to logging.properties
+ *                                                    (handler must be adjusted anyway).
+ *                                                    Set InterruptedException as cause.
  ******************************************************************************/
 package org.eclipse.californium.elements.util;
 
@@ -44,18 +48,14 @@ import java.util.logging.Logger;
  * The full range is used before any free port is reused.
  * 
  * To log all exchanged message, use level FINE. If sending and receiving should
- * be distinguished, use level FINER. This usually configured using the logging
- * properties ("src/test/resources/Californium-logging.properties"). For
- * executing the junit test within eclipse, you may also define the level as
- * property
- * "org.eclipse.californium.elements.util.DirectDatagramSocketImpl.level",
- * either at project/runner level as VM arguments, or general for a JRE as
- * default VM arguments (Window->Preferences | Java -> Installed JREs | select
- * and EDIT).
+ * be distinguished, use level FINER. For the test executed with maven, this is
+ * usually configured using the logging properties
+ * ("src/test/resources/Californium-logging.properties").
  * 
- * Note: ensure, that the used "logging.properties" are also matching your
- * requirements, either by editing the global file "JRE/lib/logging.properties"
- * or by providing the property "java.util.logging.config.file".
+ * Note: If not executed with maven, ensure, that the used "logging.properties"
+ * are also matching your requirements, either by editing the global file
+ * "JRE/lib/logging.properties" or by providing the property
+ * "java.util.logging.config.file".
  * 
  * Currently neither multicast nor specific/multi network interfaces are
  * supported.
@@ -76,23 +76,6 @@ public class DirectDatagramSocketImpl extends AbstractDatagramSocketImpl {
 	public static final int AUTO_PORT_RANGE_SIZE = AUTO_PORT_RANGE_MAX - AUTO_PORT_RANGE_MIN + 1;
 
 	private static final Logger LOGGER = Logger.getLogger(DirectDatagramSocketImpl.class.getName());
-
-	static {
-		if (null == LOGGER.getLevel()) {
-			/* check properties for default level */
-			String name = DirectDatagramSocketImpl.class.getName() + ".level";
-			String levelValue = System.getProperty(name);
-			if (null != levelValue) {
-				try {
-					Level level = Level.parse(levelValue);
-					LOGGER.setLevel(level);
-					LOGGER.log(Level.CONFIG, "level ''{0}''", level);
-				} catch (IllegalArgumentException ex) {
-					LOGGER.log(Level.SEVERE, "level ''{0}'' is not supported!", levelValue);
-				}
-			}
-		}
-	}
 
 	/**
 	 * Default factory, if {@code null} is provided for
@@ -210,7 +193,9 @@ public class DirectDatagramSocketImpl extends AbstractDatagramSocketImpl {
 				addr = this.localAddress;
 			}
 			if (isClosed) {
-				LOGGER.log(Level.FINE, "socket already closed {0}", exchange.format(currentSetup));
+				if (LOGGER.isLoggable(Level.FINE)) {
+					LOGGER.log(Level.FINE, "socket already closed {0}", exchange.format(currentSetup));
+				}
 				throw new SocketException("Socket " + addr + ":" + port + " closed!");
 			} else if (LOGGER.isLoggable(Level.FINER)) {
 				LOGGER.log(Level.FINER, "incoming {0}", exchange.format(currentSetup));
@@ -240,7 +225,13 @@ public class DirectDatagramSocketImpl extends AbstractDatagramSocketImpl {
 			if (!incomingQueue.isEmpty()) {
 				LOGGER.log(Level.WARNING, "interrupted while receiving!");
 			}
-			throw new SocketException(exception.getMessage() + addr + ":" + port);
+			String message = exception.getMessage();
+			if (null == message) {
+				message = "interrupted";
+			}
+			// use IOException instead of InterruptedIOException
+			// to append the origin cause for logging
+			throw new IOException(message + ", " + addr + ":" + port, exception);
 		}
 	}
 
@@ -262,14 +253,20 @@ public class DirectDatagramSocketImpl extends AbstractDatagramSocketImpl {
 		DatagramExchange exchange = new DatagramExchange(local, port, packet);
 		DirectDatagramSocketImpl destination = map.get(exchange.destinationPort);
 		if (null == destination) {
-			LOGGER.log(Level.SEVERE, "destination (port {0}) not available! {1}",
-					new Object[] { exchange.destinationPort, exchange.format(currentSetup) });
+			if (LOGGER.isLoggable(Level.SEVERE)) {
+				LOGGER.log(Level.SEVERE, "destination (port {0}) not available! {1}",
+						new Object[] { exchange.destinationPort, exchange.format(currentSetup) });
+			}
 			throw new PortUnreachableException("destination not available");
 		} else if (isClosed) {
-			LOGGER.log(Level.WARNING, "closed/packet dropped! {0}", exchange.format(currentSetup));
+			if (LOGGER.isLoggable(Level.WARNING)) {
+				LOGGER.log(Level.WARNING, "closed/packet dropped! {0}", exchange.format(currentSetup));
+			}
 			throw new SocketException("socket is closed");
 		} else if (!destination.incomingQueue.offer(exchange)) {
-			LOGGER.log(Level.SEVERE, "packet dropped! {0}", exchange.format(currentSetup));
+			if (LOGGER.isLoggable(Level.SEVERE)) {
+				LOGGER.log(Level.SEVERE, "packet dropped! {0}", exchange.format(currentSetup));
+			}
 			throw new PortUnreachableException("buffer exhausted");
 		} else if (LOGGER.isLoggable(Level.FINER)) {
 			LOGGER.log(Level.FINER, "outgoing {0}", exchange.format(currentSetup));
