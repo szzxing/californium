@@ -18,6 +18,10 @@
  *    Kai Hudalla - logging
  *    Achim Kraus (Bosch Software Innovations GmbH) - use CoapNetworkRule for
  *                                                    setup of test-network
+ *    Achim Kraus (Bosch Software Innovations GmbH) - destroy server after test
+ *                                                    increase waiting time to 2s
+ *                                                    (hudson seems to sleep from
+ *                                                    time to time :-) )
  ******************************************************************************/
 package org.eclipse.californium.core.test;
 
@@ -26,6 +30,7 @@ import static org.junit.Assert.assertNotNull;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.logging.Logger;
 
 import org.eclipse.californium.category.Medium;
 import org.eclipse.californium.core.CoapServer;
@@ -37,34 +42,47 @@ import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.EndpointManager;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.server.MessageDeliverer;
+import org.eclipse.californium.elements.runner.RepeatingTestRunner;
 import org.eclipse.californium.rule.CoapNetworkRule;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 
 
 /**
  * This is a small test that tests the exchange of one request and one response.
  */
+@RunWith(RepeatingTestRunner.class)
 @Category(Medium.class)
 public class SmallServerClientTest {
+	public static final Logger LOGGER = Logger.getLogger(SmallServerClientTest.class.getName());
+	
 	@ClassRule
 	public static CoapNetworkRule network = new CoapNetworkRule(CoapNetworkRule.Mode.DIRECT, CoapNetworkRule.Mode.NATIVE);
 
 	private static String SERVER_RESPONSE = "server responds hi";
-
+	
+	private CoapServer server;
+	
 	private int serverPort;
 
 	@Before
 	public void initLogger() {
+		LOGGER.info("Start");
 		System.out.println(System.lineSeparator() + "Start " + getClass().getSimpleName());
 		EndpointManager.clear();
 	}
 
 	@After
 	public void after() {
+		LOGGER.info("Destroy");
+		if (null != server) {
+			server.destroy();
+		}
+		LOGGER.info("End");
 		System.out.println("End " + getClass().getSimpleName());
 	}
 
@@ -79,10 +97,12 @@ public class SmallServerClientTest {
 		request.setDestinationPort(serverPort);
 		request.setPayload("client says hi");
 		request.send();
+		LOGGER.info("client sent request");
 		System.out.println("client sent request");
 
 		// receive response and check
-		Response response = request.waitForResponse(1000);
+		Response response = request.waitForResponse(2000);
+		LOGGER.info("client finished wait");
 		assertNotNull("Client received no response", response);
 		System.out.println("client received response");
 		assertEquals(response.getPayloadString(), SERVER_RESPONSE);
@@ -90,7 +110,7 @@ public class SmallServerClientTest {
 
 	private void createSimpleServer() {
 		CoapEndpoint endpoint = new CoapEndpoint(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0));
-		CoapServer server = new CoapServer();
+		server = new CoapServer();
 		server.addEndpoint(endpoint);
 		server.setMessageDeliverer(new MessageDeliverer() {
 			@Override
